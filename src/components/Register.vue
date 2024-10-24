@@ -1,6 +1,6 @@
 <template>
 <div class="register-container">
-    <h1>이름?</h1>
+    <h1>ChatDay</h1>
     <div class="input-container">
     <input type="text" placeholder="닉네임" v-model="nickname" />
     <input type="text" placeholder="아이디" v-model="username" />

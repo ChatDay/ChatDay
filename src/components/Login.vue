@@ -1,6 +1,6 @@
 <template>
 <div class="login-container">
-    <h1>놀다가자 ~</h1>
+    <h1>ChatDay</h1>
     <div class="input-container">
     <input type="text" placeholder="아이디를 입력해주세요" v-model="username" />
     <input type="password" placeholder="비밀번호를 입력해주세요" v-model="password" />

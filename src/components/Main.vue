@@ -1,6 +1,6 @@
 <template>
     <div class="main-container">
-    <h1>이름?</h1>
+    <h1>ChatDay</h1>
     <div class="topic">
         <div class="menu">오늘의 주제: 메뉴추천</div>
     </div>
