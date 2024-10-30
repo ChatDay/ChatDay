@@ -1,6 +1,6 @@
 <template>
     <div class="register-container">
-    <h1>ChatDay</h1>
+    <h1 @click="$router.push('/login')" style="cursor: pointer;">ChatDay</h1>
     <div class="input-container">
         <input type="text" placeholder="닉네임" v-model="nickname" />
         <input type="text" placeholder="아이디" v-model="username" />
