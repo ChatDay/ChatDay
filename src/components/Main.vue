@@ -1,20 +1,15 @@
 <template>
-  <div class="main-container">
-    <h1>ChatDay</h1>
-    <button @click="logout">로그아웃</button>
-    <p v-if="logoutMessage" class="logout-message">{{ logoutMessage }}</p>
-    <div class="topic">
-      <div class="menu">오늘의 주제: 메뉴추천</div>
-    </div>
-    <div class="chat-section">
-      <div v-for="(message, index) in messages" :key="index" class="chat-message">
-        {{ message }}
+  <div class="chat-container">
+    <h1>ChatDay - 실시간 채팅</h1>
+    <div class="chat-box" ref="chatBox">
+      <div v-for="(msg, index) in messages" :key="index" class="chat-message">
+        <strong>{{ msg.user }}:</strong> {{ msg.message }}
       </div>
     </div>
     <input
       type="text"
       v-model="newMessage"
-      placeholder="채팅을 입력해주세요!"
+      placeholder="메시지를 입력하세요"
       @keyup.enter="sendMessage"
     />
     <button @click="sendMessage">전송</button>
@@ -22,117 +17,113 @@
 </template>
 
 <script>
-import axios from 'axios';
-
 export default {
   data() {
     return {
-      messages: [],
+      socket: null,
+      messages: [], // 복수형으로 변경
       newMessage: '',
-      logoutMessage: '' // 로그아웃 상태 메시지
+      roomName: 'default', // 채팅방 이름 설정
+      user: '사용자1', // 하드코딩된 사용자 이름
     };
   },
   created() {
-    // 페이지가 로드될 때 토큰을 확인하여 로그인 상태를 검사합니다.
-    const accessToken = localStorage.getItem('access_token');
-    if (!accessToken) {
-      console.log('로그인되지 않은 사용자입니다. 로그인 페이지로 이동합니다.');
-      this.$router.push('/login'); // 토큰이 없으면 로그인 페이지로 리다이렉트
-    }
+    this.connectWebSocket();
   },
   methods: {
+    connectWebSocket() {
+      // WebSocket 서버에 연결
+      const socketUrl = `ws://127.0.0.1:8000/ws/chat/${this.roomName}/`;
+      this.socket = new WebSocket(socketUrl);
+
+      // WebSocket 이벤트 설정
+      this.socket.onopen = () => {
+        console.log('WebSocket 연결 성공');
+      };
+
+      this.socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.message) {
+          this.messages.push({
+            user: data.user,
+            message: data.message,
+          });
+          // 새로운 메시지가 추가되면 스크롤을 맨 아래로 이동
+          this.$nextTick(() => {
+            this.scrollToBottom();
+          });
+        }
+      };
+
+      this.socket.onclose = () => {
+        console.log('WebSocket 연결 종료. 5초 후 재연결을 시도합니다.');
+        setTimeout(() => {
+          this.connectWebSocket();
+        }, 5000); // 5초 후 재연결 시도
+      };
+
+      this.socket.onerror = (error) => {
+        console.error('WebSocket 오류 발생:', error);
+      };
+    },
     sendMessage() {
-      if (this.newMessage.trim() !== '') {
-        // 메시지를 배열에 추가
-        this.messages.push(this.newMessage);
-        // 입력 필드 초기화
-        this.newMessage = '';
+      if (this.newMessage.trim() !== '' && this.socket.readyState === WebSocket.OPEN) {
+        // WebSocket을 통해 메시지 전송
+        this.socket.send(JSON.stringify({
+          'user': this.user,
+          'message': this.newMessage,
+        }));
+        this.newMessage = ''; // 입력 필드 초기화
+      } else {
+        console.log('WebSocket 연결이 열려 있지 않습니다. 메시지를 보낼 수 없습니다.');
       }
     },
-    logout() {
-  console.log('로그아웃 시작');
-  
-  // 로컬 스토리지에서 refreshToken 가져오기
-  const refreshToken = localStorage.getItem("refresh_token");
-  
-  if (!refreshToken) {
-    console.log("토큰 없음. 이미 로그아웃 상태입니다.");
-    this.logoutMessage = "이미 로그아웃 상태입니다.";
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    return;
-  }
-
-  // 서버에 로그아웃 요청 보내기
-  axios
-    .post(
-      "http://127.0.0.1:8000/api/accounts/logout/",
-      { refresh: refreshToken },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`
-        }
+    scrollToBottom() {
+      const chatBox = this.$refs.chatBox;
+      if (chatBox) {
+        chatBox.scrollTop = chatBox.scrollHeight;
       }
-    )
-    .then(response => {
-      console.log('서버 로그아웃 성공');
-      
-      // 모든 토큰 제거
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      
-      // 로그아웃 성공 메시지 표시
-      this.logoutMessage = "로그아웃 되었습니다.";
-
-      // 로그인 페이지로 이동
-      this.$router.push("/login");
-    })
-    .catch(error => {
-      console.error("로그아웃 실패:", error);
-      this.logoutMessage = "로그아웃에 실패했습니다. 다시 시도해주세요.";
-    });
-}
+    }
+  },
+  beforeDestroy() {
+    // 컴포넌트가 파괴되기 전에 WebSocket 연결 해제
+    if (this.socket) {
+      this.socket.close();
+    }
   }
 };
 </script>
 
 <style scoped>
-.main-container {
-  padding: 20px;
-  background-color: #f9f295;
+.chat-container {
   max-width: 600px;
   margin: auto;
   text-align: center;
-}
-.topic {
   background-color: #f0f0f0;
   padding: 20px;
-  margin-bottom: 20px;
+  border-radius: 10px;
 }
-.chat-section {
+.chat-box {
   height: 300px;
   overflow-y: auto;
-  margin-bottom: 20px;
-  background-color: #fff9c4;
+  background-color: #ffffff;
   padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  border: 1px solid #ffffff;
 }
 .chat-message {
-  margin: 5px 0;
-  text-align: left;
   padding: 5px;
-  background-color: #fff;
+  text-align: left;
+  margin-bottom: 5px;
+  background-color: #ececec;
   border-radius: 5px;
 }
 input {
-  width: 70%;
+  width: 80%;
   padding: 10px;
-  margin-bottom: 10px;
 }
 button {
   padding: 10px;
-}
-.logout-message {
-  color: red;
-  margin-bottom: 20px;
 }
 </style>
