@@ -7,8 +7,8 @@ from django.shortcuts import render
 
 class ChatHistoryAPIView(APIView):
     def get(self, request):
-        message = Message.objects.all().order_by('-timesamp')
-        serializer = MessageSerializer(message, meny=True)
+        message = Message.objects.all().order_by('-timestamp')
+        serializer = MessageSerializer(message, many=True)
         return Response(serializer.data, status.HTTP_200_OK)
 
 #테스트용 뷰
