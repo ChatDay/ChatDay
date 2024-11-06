@@ -1,11 +1,14 @@
 <template>
   <div class="chat-container">
     <h1>ChatDay - 실시간 채팅</h1>
+    <h2>오늘의 주제: {{ currentTopic }}</h2> <!-- 오늘의 주제 표시 -->
+
     <div class="chat-box">
       <div v-for="(msg, index) in message" :key="index" class="chat-message">
         <strong>{{ msg.user }}:</strong> {{ msg.message }}
       </div>
     </div>
+
     <input
       type="text"
       v-model="newMessage"
@@ -21,73 +24,88 @@ export default {
   data() {
     return {
       socket: null,
-      message: [],
+      message: [''],
       newMessage: '',
-      roomName: 'default', // 채팅방 이름 설정
-      user: '사용자1'  // 하드코딩된 사용자 이름
+      currentTopic: '',  // 주제 데이터를 저장할 필드
+      user: '사용자1',  // 하드코딩된 사용자 이름
     };
   },
   async created() {
+    await this.fetchTopic(); // 주제 가져오기
     await this.fetchPreviousMessages(); // 기존 채팅 메시지 불러오기
-    this.connectWebSocket();            // WebSocket 연결
+    this.connectWebSocket(); // WebSocket 연결
   },
   mounted() {
-  const savedMessages = localStorage.getItem('chatMessages');
-  if (savedMessages) {
-    const savedData = JSON.parse(savedMessages);
-    const currentTime = new Date();
-    const lastSavedTime = new Date(savedData.timestamp);
+    const savedMessages = localStorage.getItem('chatMessages');
+    if (savedMessages) {
+      const savedData = JSON.parse(savedMessages);
+      const currentTime = new Date();
+      const lastSavedTime = new Date(savedData.timestamp);
 
-    // 저장된 날짜가 오늘인지 확인
-    if (currentTime.getDate() === lastSavedTime.getDate() &&
-    currentTime.getMonth() === lastSavedTime.getMonth() &&
-    currentTime.getFullYear() === lastSavedTime.getFullYear()) {
-  this.message = savedData.messages;
-} else {
-  // 날짜가 다르면 로컬 스토리지에서 삭제
-  localStorage.removeItem('chatMessages');
-  this.message = []; // 메시지 배열 초기화
-}
-  }
+      // 저장된 날짜가 오늘인지 확인
+      if (
+        currentTime.getDate() === lastSavedTime.getDate() &&
+        currentTime.getMonth() === lastSavedTime.getMonth() &&
+        currentTime.getFullYear() === lastSavedTime.getFullYear()
+      ) {
+        this.message = savedData.messages;
+      } else {
+        localStorage.removeItem('chatMessages');
+        this.message = [];
+      }
+    }
 
-  // 자정에 자동으로 새로고침 설정 - 매 1분 자정인지 확인
-  setInterval(() => {
-  const now = new Date();
-  if (now.getHours() === 0 && now.getMinutes() === 0) {
-    console.log('자정에 도달했습니다. 페이지를 새로고침합니다.');
-    window.location.href = window.location.href; // 페이지 새로고침
-  }
-}, 60000); // 1분마다 확인
-},
+    setInterval(() => {
+      const now = new Date();
+      if (now.getHours() === 0 && now.getMinutes() === 0) {
+        console.log('자정에 도달했습니다. 페이지를 새로고침합니다.');
+        window.location.href = window.location.href;
+      }
+    }, 60000);
+  },
   beforeDestroy() {
-    // 컴포넌트가 파괴되기 전에 WebSocket 연결 해제
     if (this.socket) {
       this.socket.close();
     }
   },
   methods: {
-    async fetchPreviousMessages() {
+    async fetchTopic() {
       try {
-        const response = await fetch(`/api/chat/history/`);  // API 접근을 위한 URL을 사용
+        const response = await fetch(`http://127.0.0.1:8000/api/chat/current-topic/`);
         if (response.ok) {
           const data = await response.json();
-          this.message = data.map(msg => ({
-            user: msg.user,
-            message: msg.content  // Django에서 반환된 데이터와 일치하도록 설정
-          }));
+          this.currentTopic = data.text; // 주제 내용 저장
         } else {
-          console.error("Failed to load previous messages. Status:", response.status, response.statusText);
+          console.error('주제를 가져오는 데 실패했습니다.');
         }
       } catch (error) {
-        console.error("Error fetching previous messages:", error);
+        console.error('Error fetching topic:', error);
+      }
+    },
+    async fetchPreviousMessages() {
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/api/chat/history/`);
+        if (response.ok) {
+          const data = await response.json();
+          this.message = data.map((msg) => ({
+            user: msg.user,
+            message: msg.content,
+          }));
+        } else {
+          console.error(
+            'Failed to load previous messages. Status:',
+            response.status,
+            response.statusText
+          );
+        }
+      } catch (error) {
+        console.error('Error fetching previous messages:', error);
       }
     },
     connectWebSocket() {
-      // WebSocket 서버에 연결
-      const socketUrl = `ws://127.0.0.1:8000/ws/chat/${this.roomName}/`;
+      const socketUrl = `ws://127.0.0.1:8000/ws/chat/`;
       this.socket = new WebSocket(socketUrl);
 
-      // WebSocket 이벤트 설정
       this.socket.onopen = () => {
         console.log('WebSocket 연결 성공');
       };
@@ -97,13 +115,15 @@ export default {
         if (data.message) {
           this.message.push({
             user: data.user,
-            message: data.message
+            message: data.message,
           });
-          // 타임스탬프와 함께 저장
-          localStorage.setItem('chatMessages', JSON.stringify({
-            messages: this.message,
-            timestamp: new Date().toISOString()
-          }));
+          localStorage.setItem(
+            'chatMessages',
+            JSON.stringify({
+              messages: this.message,
+              timestamp: new Date().toISOString(),
+            })
+          );
         }
       };
 
@@ -111,7 +131,7 @@ export default {
         console.log('WebSocket 연결 종료. 5초 후 재연결을 시도합니다.');
         setTimeout(() => {
           this.connectWebSocket();
-        }, 5000); // 5초 후 재연결 시도
+        }, 5000);
       };
 
       this.socket.onerror = (error) => {
@@ -119,18 +139,26 @@ export default {
       };
     },
     async sendMessage() {
-      if (this.newMessage.trim() !== '' && navigator.onLine && this.socket.readyState === WebSocket.OPEN) {
-        // WebSocket을 통해 메시지 전송
-        this.socket.send(JSON.stringify({
-          'user': this.user,
-          'message': this.newMessage
-        }));
-        this.newMessage = ''; // 입력 필드 초기화
+      if (
+        this.newMessage.trim() !== '' &&
+        navigator.onLine &&
+        this.socket.readyState === WebSocket.OPEN
+      ) {
+        console.log("메세지 보냄")
+        this.socket.send(
+          JSON.stringify({
+            user: this.user,
+            message: this.newMessage,
+          })
+        );
+        this.newMessage = '';
       } else {
         if (!navigator.onLine) {
           console.log('네트워크가 연결되어 있지 않습니다. 메시지를 보낼 수 없습니다.');
         } else {
-          console.log('WebSocket 연결이 열려 있지 않습니다. 메시지를 보낼 수 없습니다.');
+          console.log(
+            'WebSocket 연결이 열려 있지 않습니다. 메시지를 보낼 수 없습니다.'
+          );
         }
       }
     },
@@ -139,18 +167,22 @@ export default {
         const response = await fetch(`/api/chat/`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ user, content: message }) // 필드 이름을 content로 수정
+          body: JSON.stringify({ user, content: message }),
         });
         if (!response.ok) {
-          console.error('Failed to save message. Status:', response.status, response.statusText);
+          console.error(
+            'Failed to save message. Status:',
+            response.status,
+            response.statusText
+          );
         }
       } catch (error) {
         console.error('Error saving message:', error);
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
