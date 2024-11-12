@@ -64,6 +64,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         }))
     
 
-async def save_message_to_redis(self, user, message, topic):
-        # Redis Streams를 사용하여 메시지 추가
-        redis_client.xadd(self.room_group_name, {'user': user, 'message': message, 'topic':topic})
+    async def save_message_to_redis(self, user, message, topic):
+    # Redis Streams를 사용하여 메시지 추가
+        redis_client.xadd(self.room_group_name, {
+        'user': str(user),  # user도 객체라면 문자열로 변환 필요
+        'message': message,
+        'topic': str(topic)  # topic 객체를 문자열로 변환
+        })
