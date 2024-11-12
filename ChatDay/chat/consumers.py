@@ -3,7 +3,7 @@ import redis
 from channels.generic.websocket import AsyncWebsocketConsumer
 from .models import Message, Topic
 
-
+redis_client = redis.StrictRedis(host='redis', port=6379, db=1, decode_responses=True)
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -22,8 +22,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
-        )
 
+        )
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json['message']
@@ -41,7 +41,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             print(f"Topic with ID {topic_id} does not exist.")
             return
 
-        await self.save_message(user, message, topic)
+        await self.save_message_to_redis(user, message, topic)
         
 
 
@@ -63,6 +63,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'user' : user,
         }))
     
-async def save_message(self, user, message, topic):
-        # 메시지를 데이터베이스에 저장할 때 topic을 추가합니다.
-        Message.objects.create(user=user, content=message, topic=topic)
+
+async def save_message_to_redis(self, user, message, topic):
+        # Redis Streams를 사용하여 메시지 추가
+        redis_client.xadd(self.room_group_name, {'user': user, 'message': message, 'topic':topic})

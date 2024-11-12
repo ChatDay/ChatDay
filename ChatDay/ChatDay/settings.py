@@ -171,19 +171,27 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [("redis", 6379)],
         },
     },
 }
 
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = 'true'
 
-
+CELERY_IMPORTS = ('chat.task',)
 CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_TASK_ALWAYS_EAGER = True  # Celery 작업을 동기적으로 실행
+CELERY_TASK_EAGER_PROPAGATES = True  # 예외가 발생하면 바로 던지도록 설정
+
 CELERY_BEAT_SCHEDULE = {
     'clear_chat_and_update_topic': {
-        'task': 'chat.tasks.clear_chat_and_update_topic',
+        'task': 'chat.task.clear_chat_and_update_topic',
         'schedule': crontab(hour=0, minute=0),
+    },
+
+        'save-messages-every-minute': {
+        'task': 'chat.task.save_messages_to_db',  # 실행할 Celery 작업
+        'schedule': 60.0,  # 60초마다 실행
     },
 }
