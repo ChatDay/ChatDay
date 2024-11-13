@@ -14,7 +14,7 @@ class Message(models.Model):
     user = models.CharField(max_length=100)
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, null=True) 
+    topic = models.CharField(max_length=200)
 
     def __str__(self):
         return f"{self.user}: {self.content[:20]}"

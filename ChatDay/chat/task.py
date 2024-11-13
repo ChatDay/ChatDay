@@ -4,7 +4,7 @@ import random
 import redis
 
 # Redis 연결 설정
-redis_client = redis.StrictRedis(host='redis', port=6379, db=1, decode_responses=True)
+redis_client = redis.StrictRedis(host='redis', port=6379, db=0, decode_responses=True)
 
 @shared_task
 def clear_chat_and_update_topic():
@@ -25,14 +25,11 @@ def save_messages_to_db():  # Redis에서 채팅 메시지를 가져와 DB에 �
     # Redis 스트림에서 메시지 가져오기
     messages = redis_client.xrange('chat_room')  # chat_room은 채팅방 스트림 이름
 
-    # 메시지가 없다면 로그를 남기거나 다른 처리를 할 수 있음
     if not messages:
         print("No messages to save.")
         return  # 메시지가 없으면 함수 종료
 
     for message_id, message_data in messages:
         # Redis에서 메시지 가져와 DB에 저장
-        Message.objects.create(user=message_data['user'], content=message_data['message'])
-
-    # Redis 스트림에서 메시지 삭제 (옵션)
-    redis_client.xtrim('chat_room', minid=message_id)  # 최신 메시지까지만 남김
+        Message.objects.create(user=message_data['user'], content=message_data['message'], topic=message_data['topic'])
+        redis_client.xdel('chat_chat_room', message_id)

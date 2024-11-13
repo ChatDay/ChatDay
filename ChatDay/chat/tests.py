@@ -6,7 +6,7 @@ import redis
 from unittest.mock import patch
 
 # Redis 클라이언트 설정
-redis_client = redis.StrictRedis(host='redis', port=6379, db=1, decode_responses=True)
+redis_client = redis.StrictRedis(host='redis', port=6379, db=0, decode_responses=True)
 
 class TopicModelTest(TestCase):
     def setUp(self):

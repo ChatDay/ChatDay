@@ -191,7 +191,7 @@ CELERY_BEAT_SCHEDULE = {
     },
 
         'save-messages-every-minute': {
-        'task': 'chat.task.save_messages_to_db',  # 실행할 Celery 작업
+        'task': 'chat.task.save_messages_to_db',
         'schedule': 60.0,  # 60초마다 실행
     },
 }
