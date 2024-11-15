@@ -94,10 +94,7 @@ WSGI_APPLICATION = 'ChatDay.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': env.db(),  # DATABASE_URL 환경 변수를 사용하여 자동 설정
 }
 
 
@@ -187,8 +184,8 @@ CHANNEL_LAYERS = {
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = 'true'
 
 CELERY_IMPORTS = ('chat.task',)
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_BROKER_URL = env('CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND')
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_EAGER_PROPAGATES = False
 
