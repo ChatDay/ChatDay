@@ -15,6 +15,12 @@ from . import config
 from datetime import timedelta
 import os
 from celery.schedules import crontab
+import environ
+
+# 환경변수 초기화
+env = environ.Env()
+environ.Env.read_env()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -140,12 +146,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.User'
 
+REDIS_URL = env("REDIS_URL")
 
 # settings.py
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://redis:6379/1',
+        'LOCATION': REDIS_URL
     }
 }
 
@@ -171,18 +178,20 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [("redis", 6379)],
+            "hosts": [(REDIS_URL)],
         },
     },
 }
 
+
+
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = 'true'
 
 CELERY_IMPORTS = ('chat.task',)
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
-CELERY_TASK_ALWAYS_EAGER = True  # Celery 작업을 동기적으로 실행
-CELERY_TASK_EAGER_PROPAGATES = True  # 예외가 발생하면 바로 던지도록 설정
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_TASK_ALWAYS_EAGER = False
+CELERY_TASK_EAGER_PROPAGATES = False
 
 CELERY_BEAT_SCHEDULE = {
     'clear_chat_and_update_topic': {
