@@ -1,18 +1,17 @@
 <template>
-<div id="app">
-    <router-view></router-view>
-</div>
+    <div id="app">
+    <router-view v-slot="{ Component, isRouteChanging }">
+        <transition name="page-flip" mode="out-in">
+        <div v-if="isRouteChanging" class="loading">로딩 중...</div>
+        <component v-else :is="Component" />
+        </transition>
+    </router-view>
+    </div>
 </template>
-
 <script>
 export default {
-name: 'App'
+name: 'App',
 };
 </script>
 
-<style>
-#app {
-font-family: Avenir, Helvetica, Arial, sans-serif;
-text-align: center;
-}
-</style>
+<style src="./styles/App.css"></style>

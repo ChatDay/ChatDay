@@ -1,18 +1,20 @@
 <template>
     <div class="register-container">
     <h1 @click="$router.push('/login')" style="cursor: pointer;">ChatDay</h1>
-    <div class="input-container">
+    <form @submit.prevent="register" class="input-container">
         <input type="text" placeholder="닉네임" v-model="nickname" />
-        <input type="text" placeholder="아이디" v-model="username" />
-        <input type="password" placeholder="비밀번호" v-model="password" />
+        <input type="text" placeholder="아이디" v-model="username" autocomplete="username" />
+        <input type="password" placeholder="비밀번호" v-model="password" autocomplete="current-password"/>
         <input type="email" placeholder="이메일" v-model="email" />
-    </div>
-    <button @click="register">가입 완료!</button>
+        <button class="button" type="submit">가입 완료!</button>
+    </form>
     <p>{{ message }}</p>
     </div>
 </template>
 
+
 <script>
+import '../styles/Register.css';
 import axios from 'axios';
 
 export default {
@@ -43,6 +45,7 @@ export default {
         axios
         .post('http://127.0.0.1:8000/api/accounts/signup/', payload)
         .then(response => {
+            localStorage.setItem('nickname', this.nickname);
             this.message = '회원가입 성공! 로그인 페이지로 이동합니다.';
             this.$router.push('/login'); // 회원가입 후 로그인 페이지로 이동
         })

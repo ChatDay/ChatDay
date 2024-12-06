@@ -1,0 +1,52 @@
+.loading {
+    font-size: 24px;
+    color: #000000;
+    text-align: center;
+    padding: 50px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    }
+    
+    #app {
+    font-family: Avenir, Helvetica, Arial, sans-serif;
+    text-align: center;
+    background-color: #f9f295;
+    background-image: linear-gradient(to bottom, #f9f295, #fef9e7);
+    }
+    
+    .page-flip-enter-active,
+    .page-flip-leave-active {
+    transition: transform 0.4s ease, opacity 0.4s ease;
+    transform-origin: left center;
+    }
+    
+    .page-flip-enter {
+    transform: rotateY(90deg);
+    opacity: 0.3;
+    }
+    
+    .page-flip-enter-to {
+    transform: rotateY(0);
+    opacity: 1;
+    }
+    
+    .page-flip-leave {
+    transform: rotateY(0);
+    opacity: 1;
+    }
+    
+    .page-flip-leave-to {
+    transform: rotateY(-90deg);
+    opacity: 0.3;
+    }
+    
+    html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        background-image: linear-gradient(to bottom, #f9f295, #fef9e7); /* 전체 배경 색상을 채워줌 */
+    }

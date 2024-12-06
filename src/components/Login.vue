@@ -1,17 +1,20 @@
 <template>
     <div class="login-container">
-    <h1>ChatDay</h1>
-    <div class="input-container">
-        <input type="text" placeholder="아이디" v-model="username" />
-        <input type="password" placeholder="비밀번호" v-model="password" />
-    </div>
-    <button @click="login">로그인</button>
-    <button @click="$router.push('/register')">회원가입</button>
+    <h1 @click="$router.push('/login')" style="cursor: pointer;">What's for dinner?</h1>
+    <form @submit.prevent="login">
+        <div class="input-container">
+        <input type="text" placeholder="아이디" v-model="username" autocomplete="username" />
+        <input type="password" placeholder="비밀번호" v-model="password" autocomplete="current-password" />
+        </div>
+        <button class="login-button" type="submit">로그인</button>
+    </form>
+    <button class="signup-button" @click="$router.push('/register')">회원가입을 원하시면 여기를 눌러주세요</button>
     <p>{{ message }}</p>
     </div>
 </template>
 
 <script>
+import '../styles/Login.css';
 import axios from 'axios';
 
 export default {
@@ -67,24 +70,3 @@ methods: {
 };
 </script>
 
-<style scoped>
-.login-container {
-    padding: 20px;
-    background-color: #f9f295;
-    max-width: 400px;
-    margin: auto;
-    text-align: center;
-}
-.input-container {
-    margin-bottom: 20px;
-}
-input {
-    width: 90%;
-    padding: 10px;
-    margin: 10px 0;
-}
-button {
-    padding: 10px;
-    margin: 5px;
-}
-</style>
